@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AEXA - DEEP MONITOR // PROJETO HORIZONTE</title>
+    <style>
+        :root {
+            --gold: #c5a059;
+            --purple: #4b2e83;
+            --chaos: #00ff41;
+            --bg-deep: #020205;
+            --panel: rgba(10, 10, 10, 0.9);
+            --border-glass: rgba(255, 255, 255, 0.1);
+            --font-code: 'Courier New', monospace;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: var(--bg-deep);
+            color: #d1d1d1;
+            font-family: 'Segoe UI', sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* Scanline Effect */
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background: repeating-linear-gradient(0deg, rgba(0,0,0,0.1), rgba(0,0,0,0.1) 1px, transparent 1px, transparent 2px);
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        /* HEADER */
+        header {
+            background: rgba(0,0,0,0.95);
+            border-bottom: 2px solid var(--gold);
+            padding: 15px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 500;
+        }
+
+        .logo h1 {
+            font-size: 1.8rem;
+            letter-spacing: 10px;
+            color: var(--gold);
+            text-shadow: 0 0 10px rgba(197, 160, 89, 0.5);
+        }
+
+        .system-info {
+            font-family: var(--font-code);
+            font-size: 0.75rem;
+            color: #00ff41;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 20px;
+            margin-left: 40px;
+        }
+
+        .nav-tabs button {
+            background: none;
+            border: none;
+            color: #999;
+            cursor: pointer;
+            padding: 8px 15px;
+            font-family: var(--font-code);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .nav-tabs button.active {
+            color: var(--gold);
+            border-bottom-color: var(--gold);
+        }
+
+        /* CONTAINER PRINCIPAL */
+        .container {
+            display: grid;
+            grid-template-columns: 300px 1fr 350px;
+            gap: 0;
+            min-height: calc(100vh - 60px);
+        }
+
+        /* SIDEBAR ESQUERDO */
+        .sidebar-left {
+            background: var(--panel);
+            border-right: 1px solid var(--border-glass);
+            padding: 20px;
+            font-family: var(--font-code);
+            overflow-y: auto;
+            max-height: calc(100vh - 60px);
+        }
+
+        .section-title {
+            color: var(--gold);
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            margin: 20px 0 12px 0;
+            letter-spacing: 2px;
+        }
+
+        .stat-box {
+            margin-bottom: 15px;
+            background: rgba(255,255,255,0.02);
+            padding: 10px;
+            border-left: 2px solid var(--gold);
+            border-radius: 2px;
+        }
+
+        .label {
+            font-size: 0.6rem;
+            color: #777;
+            text-transform: uppercase;
+        }
+
+        .value {
+            font-size: 0.95rem;
+            color: #fff;
+            margin-top: 3px;
+            font-weight: bold;
+        }
+
+        .value.danger { color: #ff3e3e; }
+        .value.chaos { color: var(--chaos); }
+
+        /* ÁREA CENTRAL */
+        main {
+            background: radial-gradient(circle at center, #101025 0%, #020205 100%);
+            padding: 40px;
+            overflow-y: auto;
+            max-height: calc(100vh - 60px);
+            position: relative;
+        }
+
+        .view-section {
+            display: none;
+        }
+
+        .view-section.active {
+            display: block;
+        }
+
+        /* GRID TPET */
+        .tpet-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .element {
+            border: 1px solid #333;
+            background: rgba(20, 20, 20, 0.9);
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .element:hover {
+            border-color: var(--gold);
+            transform: scale(1.08);
+            background: rgba(197, 160, 89, 0.1);
+            box-shadow: 0 0 10px rgba(197, 160, 89, 0.3);
+        }
+
+        .element.entropium {
+            border-style: dashed;
+            border-color: var(--chaos);
+        }
+
+        .symbol {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--gold);
+        }
+
+        .symbol.chaos { color: var(--chaos); }
+        .el-name {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            color: #fff;
+            margin-top: 5px;
+        }
+
+        /* MAPA ESTELAR */
+        .star-map {
+            width: 100%;
+            height: 500px;
+            background: radial-gradient(circle at center, rgba(16, 16, 37, 0.8) 0%, rgba(2, 2, 5, 1) 100%);
+            border: 1px solid var(--border-glass);
+            position: relative;
+            margin-top: 30px;
+            overflow: hidden;
+        }
+
+        .orbit {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            border: 1px dashed rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .origin-alpha {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: radial-gradient(circle, #ffff00 0%, rgba(255, 255, 0, 0.3) 100%);
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 20px rgba(255, 255, 0, 0.8);
+        }
+
+        .markovic-satellite {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #00ff41;
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--chaos);
+            animation: orbit 20s linear infinite;
+        }
+
+        @keyframes orbit {
+            from { transform: translate(-50%, -50%) rotate(0deg) translateX(150px) rotate(0deg); }
+            to { transform: translate(-50%, -50%) rotate(360deg) translateX(150px) rotate(-360deg); }
+        }
+
+        /* SIDEBAR DIREITO */
+        .sidebar-right {
+            background: var(--panel);
+            border-left: 1px solid var(--border-glass);
+            padding: 20px;
+            font-family: var(--font-code);
+            overflow-y: auto;
+            max-height: calc(100vh - 60px);
+        }
+
+        .log-entry {
+            font-size: 0.75rem;
+            margin-bottom: 8px;
+            padding: 5px;
+            border-left: 2px solid transparent;
+        }
+
+        .log-entry.info {
+            color: #00ff41;
+            border-left-color: #00ff41;
+        }
+
+        .log-entry.warn {
+            color: #ffaa00;
+            border-left-color: #ffaa00;
+        }
+
+        .log-entry.error {
+            color: #ff3e3e;
+            border-left-color: #ff3e3e;
+        }
+
+        .log-entry.sys {
+            color: var(--gold);
+            border-left-color: var(--gold);
+        }
+
+        h2 {
+            font-size: 1.3rem;
+            color: var(--gold);
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px rgba(197, 160, 89, 0.3);
+        }
+
+        h3 {
+            font-size: 1rem;
+            color: #fff;
+            margin: 20px 0 10px 0;
+        }
+
+        p {
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: #d1d1d1;
+            margin-bottom: 15px;
+        }
+
+        .element-details {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-glass);
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 2px;
+        }
+
+        .element-details strong {
+            color: var(--gold);
+        }
+
+        .photo-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .photo-card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.35);
+        }
+
+        .photo-card img {
+            width: 100%;
+            display: block;
+            height: 180px;
+            object-fit: cover;
+            filter: brightness(0.92);
+        }
+
+        .photo-caption {
+            padding: 12px 14px;
+            font-size: 0.8rem;
+            color: #d1d1d1;
+            line-height: 1.4;
+            background: rgba(0,0,0,0.4);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 900;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background: var(--panel);
+            margin: 10% auto;
+            padding: 20px;
+            border: 1px solid var(--gold);
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            border-radius: 2px;
+        }
+
+        .close-modal {
+            color: var(--gold);
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close-modal:hover {
+            color: #fff;
+        }
+
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo">
+        <h1>AEXA // DEEP MONITOR</h1>
+    </div>
+    <div class="nav-tabs">
+        <button class="active" data-tab="status">Status</button>
+        <button data-tab="tpet">TPET Database</button>
+        <button data-tab="missão">Horizonte</button>
+        <button data-tab="netuno">Netuno 2034</button>
+        <button data-tab="narrativa">Narrativa</button>
+    </div>
+    <div class="system-info">
+        PROTOCOLO MARKOVIC-DATA ATIVO // CONEXÃO LUXION: ESTÁVEL // <span id="timestamp"></span>
+    </div>
+</header>
+
+<div class="container">
+    <!-- SIDEBAR ESQUERDO -->
+    <aside class="sidebar-left">
+        <div class="section-title">Status Orbital</div>
+        <div class="section-title">Comandante Eloy Markovic</div>
+
+        <div class="stat-box">
+            <div class="label">Frequência Cardíaca</div>
+            <div class="value danger">00 BPM</div>
+        </div>
+
+        <div class="stat-box">
+            <div class="label">Oxigênio</div>
+            <div class="value danger">0.0%</div>
+        </div>
+
+        <div class="stat-box">
+            <div class="label">Temperatura (Core)</div>
+            <div class="value danger">-271.4°C</div>
+        </div>
+
+        <div class="stat-box">
+            <div class="label">Estado</div>
+            <div class="value" style="color: var(--chaos);">ESTASE PERMANENTE</div>
+        </div>
+
+        <div class="stat-box">
+            <div class="label">Nível de Caos (Entropium)</div>
+            <div class="value chaos">0.00004%</div>
+        </div>
+
+        <div class="section-title">Localização Orbital</div>
+
+        <div class="stat-box">
+            <div class="label">Latitude</div>
+            <div class="value">88.387°</div>
+        </div>
+
+        <div class="stat-box">
+            <div class="label">Longitude</div>
+            <div class="value">12.226°</div>
+        </div>
+
+        <div class="stat-box">
+            <div class="label">Distância de Origin-Alpha</div>
+            <div class="value">≈ 150 Unidades Luxion</div>
+        </div>
+
+        <div class="section-title">Dossiê do Piloto</div>
+        <p style="font-size: 0.8rem; color: #bbb; line-height: 1.5;">
+            <strong>Nome:</strong> Eloy Markovic<br>
+            <strong>Classe:</strong> Comandante<br>
+            <strong>Status:</strong> Observador Silencioso<br>
+            <strong>Missão:</strong> Projeto Horizonte<br>
+            <strong>Nave:</strong> MARK-01
+        </p>
+
+        <div class="section-title">Nave MARK-01</div>
+        <div class="element-details">
+            <strong>Motor:</strong> Baryon-H<br>
+            <strong>Estabilizador Temporal:</strong> Chronium-V<br>
+            <strong>Sistema de Propulsão:</strong> Aether-G + Baryon-H<br>
+            <strong>Blindagem:</strong> Luxium
+        </div>
+    </aside>
+
+    <!-- ÁREA CENTRAL -->
+    <main>
+        <!-- VIEW: STATUS -->
+        <div class="view-section active" data-view="status">
+            <h2>ESTADO DO SISTEMA // PROJETO HORIZONTE</h2>
+            
+            <p>
+                O Comandante Eloy Markovic, primeiro ser humano a penetrar o véu do universo observável, 
+                encontra-se em órbita estável ao redor de Origin-Alpha. Seu corpo, mantido em estase tecnológica 
+                perpétua, transmite constantemente dados biotelemetricos e espectrais que revolucionam nossa 
+                compreensão do multiverso.
+            </p>
+
+            <h3>Última Verificação de Status</h3>
+            <div class="element-details">
+                <strong>Integridade do Traje:</strong> 97.3%<br>
+                <strong>Sistemas AEXA:</strong> Operacionais<br>
+                <strong>Transmissão Luxion:</strong> Estável<br>
+                <strong>Câmera MARK-01:</strong> Danos por radiação multiversal (Não recuperável)<br>
+                <strong>Armazenamento de Dados:</strong> 100% de capacidade preservada
+            </div>
+
+            <h3>A Órbita Silenciosa</h3>
+            <div class="star-map">
+                <div class="orbit" style="width: 300px; height: 300px;"></div>
+                <div class="orbit" style="width: 150px; height: 150px;"></div>
+                <div class="origin-alpha"></div>
+                <div class="markovic-satellite" style="top: 50%; left: 50%;"></div>
+                <div style="position: absolute; bottom: 20px; left: 20px; font-size: 0.7rem; color: #555;">
+                    ORIGEM-ALPHA (Centro) | ÓRBITA DE MARKOVIC (em verde)
+                </div>
+            </div>
+
+            <p style="margin-top: 20px; font-size: 0.9rem; color: #a81111;">
+                Simulação orbital do Comandante Markovic em sua jornada contínua ao redor de Origin-Alpha.
+                A dificuldade em rastreá-lo consistentemente é atribuída à distorção e ocultação causadas 
+                pelo vácuo energético trans-dimensional.
+            </p>
+        </div>
+
+        <!-- VIEW: TPET -->
+        <div class="view-section" data-view="tpet">
+            <h2>TPET - TABELA PERIÓDICA DE ELEMENTOS TRANS-UNIVERSAIS</h2>
+            <p>Elementos descobertos através da análise contínua dos biossinais e dados telemétricos do Comandante Markovic.</p>
+
+            <div class="tpet-grid">
+                <div class="element" onclick="showElementDetails('baryon-h')">
+                    <span class="symbol">Ba-H</span>
+                    <div class="el-name">Baryon-H</div>
+                </div>
+                <div class="element" onclick="showElementDetails('chronium-v')">
+                    <span class="symbol">Ch-V</span>
+                    <div class="el-name">Chronium-V</div>
+                </div>
+                <div class="element" onclick="showElementDetails('aether-g')">
+                    <span class="symbol">Ae-G</span>
+                    <div class="el-name">Aether-G</div>
+                </div>
+                <div class="element" onclick="showElementDetails('singularium-0')">
+                    <span class="symbol">Si-0</span>
+                    <div class="el-name">Singularium-0</div>
+                </div>
+                <div class="element entropium" onclick="showElementDetails('entropium')">
+                    <span class="symbol chaos">En-C</span>
+                    <div class="el-name">Entropium</div>
+                </div>
+                <div class="element" onclick="showElementDetails('vero-materia')">
+                    <span class="symbol">Vr-X</span>
+                    <div class="el-name">Vero-Matéria</div>
+                </div>
+                <div class="element" onclick="showElementDetails('luxium')">
+                    <span class="symbol">Lu-X</span>
+                    <div class="el-name">Luxium</div>
+                </div>
+                <div class="element" onclick="showElementDetails('aethelum')">
+                    <span class="symbol">Ae-0</span>
+                    <div class="el-name">Aethelum</div>
+                </div>
+            </div>
+
+            <h3 style="margin-top: 30px;">Descoberta e Aplicações</h3>
+            <div class="element-details">
+                <strong>Método de Descoberta:</strong> Análise espectral contínua do corpo e nave de Markovic<br>
+                <strong>Data de Primeiro Registro:</strong> Dias após a transmissão final<br>
+                <strong>Aplicações Conhecidas:</strong> Motores de salto instantâneo, blindagens temporais, 
+                estabilização dimensional<br>
+                <strong>Impacto Civilizacional:</strong> Revolução na física multiversal
+            </div>
+        </div>
+
+        <!-- VIEW: MISSÃO -->
+        <div class="view-section" data-view="missão">
+            <h2>PROJETO HORIZONTE - LINHA DO TEMPO</h2>
+
+            <h3>A Missão Trans-Dimensional</h3>
+            <p>
+                O Projeto Horizonte representa a primeira tentativa deliberada de um ser humano em perfurar 
+                o véu do universo observável e alcançar o vácuo energético além da bolha atmosférica de Origin-Alpha.
+            </p>
+
+            <div class="element-details">
+                <strong style="display: block; margin-bottom: 10px;">► Fase 1: Preparação</strong>
+                - Desenvolvimento da nave MARK-01 com motor Baryon-H<br>
+                - Treinamento extensivo do Comandante Markovic<br>
+                - Calibração dos sistemas AEXA
+            </div>
+
+            <div class="element-details">
+                <strong style="display: block; margin-bottom: 10px;">► Fase 2: Perfuração do Véu</strong>
+                - Penetração bem-sucedida da bolha atmosférica<br>
+                - Primeiras e únicas imagens do vácuo energético trans-dimensional<br>
+                - Detecção de matérias anômalas desconhecidas
+            </div>
+
+            <div class="element-details">
+                <strong style="display: block; margin-bottom: 10px;">► Fase 3: Colapso e Estase</strong>
+                - Falha da câmera por radiação multiversal<br>
+                - Ativação automática de estase permanente<br>
+                - Órbita estabilizada ao redor de Origin-Alpha<br>
+                - Monitoramento contínuo até os dias de hoje
+            </div>
+
+            <h3>O Sacrifício de Markovic</h3>
+            <p>
+                A morte aparente do Comandante Markovic não marcou o fim de sua contribuição à humanidade, 
+                mas sim uma transformação. Seu corpo congelado tornou-se uma sonda bioluminosa de dados eterna, 
+                transmitindo informações sobre interações com matéria e energia trans-dimensional. 
+                Ele é agora o "Observador Silencioso" — um monumento flutuante à curiosidade humana.
+            </p>
+
+            <h3>Galeria de Fotos - Projeto Horizonte</h3>
+            <div class="photo-gallery">
+                <div class="photo-card">
+                    <img src="curva.png" alt="Nave MARK-01 em órbita de Origin-Alpha">
+                    <div class="photo-caption">MARK-01 em órbita de Origin-Alpha, último registro visual antes da falha da câmera.</div>
+                </div>
+                <div class="photo-card">
+                    <img src="ca4ccb14-8f2a-47cf-9dbd-c9b1dfbd8045 copy.jpeg" alt="Interface de monitoramento AEXA">
+                    <div class="photo-caption">Console AEXA exibindo os biossinais congelados de Markovic durante a missão.</div>
+                </div>
+            </div>
+
+            <h3>Registros Pessoais de Markovic</h3>
+            <div class="element-details" style="background: rgba(0, 0, 0, 0.85); border-color: rgba(255,255,255,0.08);">
+                <strong style="color: var(--gold); display: block; margin-bottom: 15px;">Registro de Transmissão #88 — O Limiar da Bolha</strong>
+                "Eu acabei de atravessar. A sensação não é de movimento, é de substituição. É como se cada átomo do meu corpo estivesse sendo trocado por algo que não deveria ocupar espaço. O silêncio aqui fora não é ausência de som; é uma pressão que vibra dentro dos meus dentes. Eu olho para trás e vejo o nosso universo como uma bolha de sabão flutuando num oceano de piche brilhante. Ele parece tão pequeno... tão frágil. Eu sinto uma fome que não é do meu estômago, é uma sede de existência, como se o vácuo estivesse tentando me beber."
+            </div>
+            <div class="element-details" style="background: rgba(0, 0, 0, 0.85); border-color: rgba(255,255,255,0.08);">
+                <strong style="color: var(--gold); display: block; margin-bottom: 15px;">Registro de Transmissão #92 — A Dança das Sombras</strong>
+                "As luzes começaram a aparecer. Elas não brilham como estrelas; elas pulsam como veias. Há cores aqui que eu não tenho nome para descrever, tons que fazem meus olhos doerem porque meu cérebro tenta transformá-los em algo conhecido e falha. Eu sinto presenças. Não são naves, não são seres... são correntes de consciência que passam pela nave. Quando elas encostam no casco, eu sinto memórias que não são minhas. Sinto o nascimento de galáxias que já morreram e o frio de lugares que nunca viram o sol. Eu não estou mais sozinho, mas a companhia aqui é mais solitária do que o vazio."
+            </div>
+            <div class="element-details" style="background: rgba(0, 0, 0, 0.85); border-color: rgba(255,255,255,0.08);">
+                <strong style="color: var(--gold); display: block; margin-bottom: 15px;">Registro de Transmissão #104 — A Deformação do Eu</strong>
+                "Minha mão... eu olho para ela e vejo rastros. Cada movimento que eu faço deixa uma sombra que demora a desaparecer. O tempo está ficando espesso, como mel. Eu sinto o 'caos' entrando. Não é uma dor física, é uma desordem na alma. Sinto como se eu fosse um rádio sintonizando todas as estações ao mesmo tempo. Eu vejo o que está por vir, mas não consigo segurar a imagem. Eu sinto o cheiro de ozônio e algo doce, como flores apodrecendo no vácuo. Eu sou o primeiro a ver o avesso de tudo. É aterrorizante, e ao mesmo tempo, é a coisa mais bonita que já me destruiu."
+            </div>
+            <div class="element-details" style="background: rgba(0, 0, 0, 0.85); border-color: rgba(255,255,255,0.08);">
+                <strong style="color: var(--gold); display: block; margin-bottom: 15px;">Último Log de Texto — Estase Iminente</strong>
+                "O motor parou de rugir e começou a cantar. Uma nota única, constante, que ressoa no meu peito. A luz roxa está inundando a cabine. Eu não sinto mais o peso do meu traje. Eu sinto que estou me tornando parte da órbita. Se alguém estiver ouvindo... não venham me buscar para me salvar. Venham para ver o que eu vi. O vácuo não é vazio. Ele é um arquivo de tudo o que foi e do que nunca será. Eu vou fechar os olhos agora, mas eu ainda vou estar olhando. Eu ainda vou estar olhando."
+            </div>
+            <div class="element-details">
+                <strong>Análise do Deep Monitor:</strong> Os registros indicam que o Comandante Markovic atingiu um estado de "Saturação Trans-Dimensional". A falta de referências a elementos químicos ou dados técnicos nestas mensagens sugere que, nos momentos finais, a percepção humana sobrepujou o equipamento da AEXA. Seu corpo permanece em órbita, servindo como a antena física para essas sensações que continuam a ecoar no terminal.
+            </div>
+        </div>
+
+        <!-- VIEW: NETUNO 2034 -->
+        <div class="view-section" data-view="netuno">
+            <h2>PROJETO NETUNO - ARQUIVO HISTÓRICO (2034)</h2>
+
+            <h3>Resumo de Missão: Projeto Netuno</h3>
+            <p>
+                O Projeto Netuno foi uma missão tripulada experimental que serviu como prova de conceito para o 
+                motor de dobra espacial movido a Baryon-H. Foi a <strong>primeira vez</strong> que um ser humano 
+                utilizou propulsão trans-luminal para cruzar o Sistema Solar em tempo recorde. Esta foi a 
+                precursora experimental do Projeto Horizonte, realizado quatro anos depois.
+            </p>
+
+            <div class="element-details" style="border-left-color: #00aa88;">
+                <strong style="color: #00aa88;">DADOS CRONOLÓGICOS</strong><br><br>
+                <strong>Ano de Execução:</strong> 2034<br>
+                <strong>Intervalo Temporal:</strong> 4 anos antes do Projeto Horizonte<br>
+                <strong>Duração Observada:</strong> 4 meses (120 dias) - tempo do observador na Terra<br>
+                <strong>Tempo Subjetivo da Tripulação:</strong> Apenas alguns minutos<br>
+                <strong>Localização-Alvo:</strong> Órbita de Netuno, limite externo do Sistema Solar<br>
+                <strong>Classificação:</strong> MISSÃO EXPERIMENTAÇÃO CRÍTICA
+            </div>
+
+            <h3>🚀 Objetivos Principais</h3>
+            <div class="element-details">
+                <strong style="display: block; margin-bottom: 10px;">1. Validação de Propulsão</strong>
+                Testar a estabilidade do protótipo de motor Baryon-H (versão V1) em um trajeto de longa distância 
+                através do espaço convencional e trans-luminal.
+            </div>
+
+            <div class="element-details">
+                <strong style="display: block; margin-bottom: 10px;">2. Teste de Salto DAL</strong>
+                Alcançar o estado de Distância Além da Luz (DAL) pela primeira vez na história humana, comprovando 
+                a viabilidade teórica da dobra espacial.
+            </div>
+
+            <div class="element-details">
+                <strong style="display: block; margin-bottom: 10px;">3. Coleta de Dados Gravitacionais</strong>
+                Observar como a massa da nave reagia à dobra espacial sem o uso de estabilizadores avançados como 
+                Aether-G ou Chronium-V.
+            </div>
+
+            <h3>⚠️ A Falha Crítica e Sucesso Inesperado</h3>
+            <p>
+                Diferente do Projeto Horizonte, que seria equipado com tecnologia trans-universal estabilizada, 
+                a nave do Projeto Netuno foi deliberadamente mantida simples. O protótipo Baryon-H V1 funcionava 
+                sem os refinamentos tecnológicos que viriam depois. Isso resultou em uma série de eventos críticos:
+            </p>
+
+            <div class="element-details" style="border-left-color: #ff6600;">
+                <strong style="color: #ff6600; display: block; margin-bottom: 10px;">► DISTORÇÃO TEMPORAL</strong>
+                A falta de controle sobre a dilatação do tempo fez com que a nave "desaparecesse" da realidade local 
+                por dois meses. Do ponto de vista dos sistemas de monitoramento da Terra, a missão estava perdida.
+            </div>
+
+            <div class="element-details" style="border-left-color: #ff6600;">
+                <strong style="color: #ff6600; display: block; margin-bottom: 10px;">► FALHA MECÂNICA DO MOTOR</strong>
+                O motor de dobra sofreu um colapso irreversível logo após atingir o estado DAL. A falha foi causada 
+                pela falta de estabilizadores de Chronium-V e Aether-G. A tripulação foi forçada a realizar manobras 
+                de reentrada convencionais, consumindo combustível crítico.
+            </div>
+
+            <div class="element-details" style="border-left-color: #ff6600;">
+                <strong style="color: #ff6600; display: block; margin-bottom: 10px;">► RETORNO IMPROVÁVEL</strong>
+                Contra todas as expectativas, a nave conseguiu retornar à órbita terrestre após os 60 dias observados. 
+                A tripulação relata que o tempo interior foi muito menos — apenas minutos subjetivos.
+            </div>
+
+            <h3>✓ Resultado Final: Sucesso Paradoxal</h3>
+            <p>
+                <strong>Apesar da falha técnica e do atraso no retorno, a missão foi considerada um sucesso total.</strong>
+            </p>
+
+            <div class="element-details">
+                <strong>Conquistas Validadas:</strong><br>
+                ✓ Provou que a dobra espacial era <strong>fisicamente possível</strong><br>
+                ✓ Demonstrou que o organismo humano pode sobreviver ao procedimento DAL<br>
+                ✓ Coletou dados inestimáveis sobre dilatação temporal em saltos transdimensionais<br>
+                ✓ Identificou os limites do Baryon-H V1 e necessidade de estabilizadores<br>
+                ✓ Forneceu base teórica para desenvolvimento de gerações futuras (que resultariam em Horizonte)
+            </div>
+
+            <h3>Impacto no Programa Espacial</h3>
+            <p>
+                O sucesso do Projeto Netuno, ainda que acidentado, abriu as portas para o programa trans-universal 
+                da AEXA. Os dados coletados indicaram que seria necessário integrar três tecnologias críticas para 
+                futuras missões:
+            </p>
+
+            <div class="element-details">
+                <strong>1. Stabilizador Chronium-V:</strong> Para manter controle temporal durante saltos DAL<br>
+                <strong>2. Estabilizador Aether-G:</strong> Para compensar efeitos gravitacionais de dobra<br>
+                <strong>3. Blindagem Luxium:</strong> Para proteção contra radiação trans-luminal
+            </div>
+
+            <h3>Galeria de Fotos - Projeto Netuno</h3>
+            <div class="photo-gallery">
+                <div class="photo-card">
+                    <img src="948d5fda-8c4d-4fe0-b89e-81712488050c.jpeg" alt="Nereida-1 na órbita de Netuno">
+                    <div class="photo-caption">Protótipo Nereida-1 em órbita de Netuno durante o teste de dobra.</div>
+                </div>
+                <div class="photo-card">
+                    <img src="324db34d-3be9-4033-a915-af2030abd020.jpeg" alt="Registro de bordo de Bryan Henderson">
+                    <div class="photo-caption">Registro visual do diário de bordo de Bryan Henderson, com anotações de seu retorno.</div>
+                </div>
+                <div class="photo-card">
+                    <img src="" alt="Sistema Solar visto do abismo">
+                    <div class="photo-caption">Registro N-04: O Sistema Solar interno visto do abismo. A 30 Unidades Astronômicas de distância, tudo o que amamos cabe em um único pixel de ruído telemétrico.</div>
+                </div>
+            </div>
+
+            <h3>📓 Diário de Bordo - Piloto Bryan Henderson</h3>
+            <p>
+                <strong>Veículo:</strong> Protótipo Nereida-1 (Motor de Dobra V1)<br>
+                <strong>Status:</strong> MISSÃO CONCLUÍDA - SOBREVIVENTE ÚNICO
+            </p>
+
+            <div class="element-details" style="font-family: var(--font-code); font-size: 0.85rem; line-height: 1.6; background: rgba(0,0,0,0.8);">
+                <strong style="color: var(--gold); display: block; margin-bottom: 15px; font-size: 1rem;">DIA 01: O Salto</strong>
+                "O motor de Baryon-H rugiu como nada que eu já tenha ouvido. Por um segundo, as estrelas viraram linhas e eu senti meu corpo esticar. Mas o silêncio veio logo depois. O painel está vermelho. Estou na órbita de Netuno, mas o motor de dobra simplesmente 'apagou'. A Terra não responde. Estou sozinho aqui fora."
+                <br><br>
+
+                <strong style="color: var(--gold); display: block; margin-bottom: 15px; font-size: 1rem;">DIA 30: O Sussurro do Vácuo</strong>
+                "Um mês. Era para eu estar em casa agora. O oxigênio está sendo reciclado pela terceira vez e tem um gosto metálico. Passo horas olhando para a mancha azul de Netuno lá embaixo. É linda, mas é uma beleza fria. Às vezes ouço estalos no motor... parece que o Baryon-H está tentando se comunicar com o vácuo."
+                <br><br>
+
+                <strong style="color: var(--gold); display: block; margin-bottom: 15px; font-size: 1rem;">DIA 60: A Sombra da Dúvida</strong>
+                "Hoje faz dois meses. A AEXA já deve ter feito o meu funeral. Meus suprimentos estão no fim. Comecei a racionar a comida para uma refeição a cada dois dias. O frio aqui dentro é constante. Bryan Henderson, o primeiro homem a chegar em Netuno e o primeiro a morrer no esquecimento."
+                <br><br>
+
+                <strong style="color: var(--gold); display: block; margin-bottom: 15px; font-size: 1rem;">DIA 95: Alucinações de Luxions</strong>
+                "Vi luzes lá fora hoje. Não eram estrelas. Eram flashes roxos e dourados. Acho que a radiação está vencendo a blindagem da Nereida. Comecei a falar sozinho para não esquecer o som da minha voz. Se eu não voltar, espero que alguém encontre este registro."
+                <br><br>
+
+                <strong style="color: var(--gold); display: block; margin-bottom: 15px; font-size: 1rem;">DIA 120: O Milagre de Baryon</strong>
+                "Eu não acredito. Eu estava quase aceitando o fim quando o núcleo de energia deu sinal de vida. Eu não forcei, eu não apertei nenhum botão... ele simplesmente estabilizou. O motor de dobra voltou a vibrar. Vou tentar o salto de retorno agora. Se eu errar o cálculo, vou virar poeira espacial. Se eu acertar... vejo vocês em algumas horas."
+            </div>
+
+            <p style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-glass); font-style: italic;">
+                O Projeto Netuno foi a ponte entre a física tradicional e a era trans-universal. 
+                Seu sucesso improvável pavimentou o caminho para o Projeto Horizonte, que ocorreria em 2038.
+            </p>
+        </div>
+
+        <!-- VIEW: NARRATIVA -->
+        <div class="view-section" data-view="narrativa">
+            <h2>A NARRATIVA ÉPICA DE ELOY MARKOVIC</h2>
+
+            <h3>O Primeiro Explorador Trans-Universal</h3>
+            <p>
+                Esta narrativa, centrada na figura trágica e heroica do Comandante Eloy Markovic e em sua 
+                missão derradeira, o Projeto Horizonte, estabelece um marco fundamental não apenas para a 
+                exploração espacial humana, mas para a compreensão fundamental da física que rege o multiverso 
+                e o destino da própria espécie no cosmos.
+            </p>
+
+            <p>
+                A missão, a primeira a perfurar o véu do nosso universo observável e olhar para o vácuo 
+                energético além da bolha de gás atmosférico de Origin-Alpha, reescreveu os livros de ciência 
+                à custa da vida de um homem que se tornou, simultaneamente, o primeiro explorador trans-universal 
+                e um satélite perpétuo da criação.
+            </p>
+
+            <h3>O Observador Silencioso</h3>
+            <p>
+                O relato de que Markovic morreu após a captação da última imagem e de que seu corpo continua 
+                orbitando nosso universo é um pilar da história. O fato de que a NASA, através da Agência 
+                Especial de Exploração Avançada (AEXA), continua monitorando ativamente os biossinais de seu 
+                corpo congelado e em estase — com frequência cardíaca zero, oxigênio zero e temperatura de 
+                -271.4°C — é uma prova poderosa de que a missão não terminou com a morte dele; ela apenas 
+                mudou de fase.
+            </p>
+
+            <p>
+                Seu corpo é agora uma sonda de dados viva e eterna, orbitando a fronteira cósmica. 
+                A dificuldade em rastreá-lo consistentemente, conforme indicado pela telemetria flutuante 
+                e pela incapacidade de fotografá-lo novamente, reforça a escala colossal e a natureza 
+                dinâmica do vácuo energético, que distorce e oculta a matéria que nela se aventura.
+            </p>
+
+            <h3>A Pedra de Roseta do Multiverso</h3>
+            <p>
+               A relação direta entre a análise dos dados biológicos e telemétricos de seu corpo e a 
+               catalogação da Tabela Periódica de Elementos Trans-Universais (TPET) é o avanço mais 
+               crucial para a humanidade derivado de seu sacrifício. A catalogação de matérias como o 
+               Aether-G (condutor de gravidade com gravidade negativa), o Singularium-0 (vácuo absoluto 
+               que repele luz), e o perigoso Entropium (energia do caos tóxica e verde) foi possível 
+               apenas porque os sistemas da AEXA monitoraram como essas matérias interagiram com o corpo 
+               e a nave de Markovic.
+            </p>
+
+            <p>
+                A compreensão não é apenas teórica; ela é a base para o desenvolvimento de tecnologia que 
+                pode, um dia, permitir que a humanidade alcance o Comandante Markovic em sua órbita perpétua. 
+                As civilizações avançadas que vagam pelo vácuo, as mesmas que veriam a Terra como uma mina 
+                preciosa devido à variante estabilizada de Baryon-H no núcleo do planeta, usam combinações 
+                desses elementos para criar tecnologias inimagináveis.
+            </p>
+
+            <h3>Legado Imortal</h3>
+            <p>
+                Assim, o Projeto Horizonte é mais do que um memorial; é uma interface de terminal de 
+                segurança máxima que monitora os biossinais de Markovic em tempo real. É um console de 
+                dados de missão que recebe telemetria sobre anomalias quânticas e níveis de radiação de 
+                Matéria Real. A história de Eloy Markovic é a história do primeiro passo do homem rumo 
+                à maturidade multiversal, um passo que continua sendo dado, milímetro por milímetro, 
+                a cada nova leitura de dados vinda de seu corpo orbitando o universo.
+            </p>
+        </div>
+    </main>
+
+    <!-- SIDEBAR DIREITO -->
+    <aside class="sidebar-right">
+        <div class="section-title">Event Log // Últimos 24h</div>
+
+        <div class="log-entry sys">> [SYS] CONEXÃO LUXION ESTÁVEL</div>
+        <div class="log-entry info">> [INFO] BIOSSINAIS NOMINAIS EM ESTASE</div>
+        <div class="log-entry info">> [SCAN] ÓRBITA CONFIRMADA 98.7% ESTÁVEL</div>
+        <div class="log-entry warn">> [WARN] RADIAÇÃO MULTIVERSAL +0.003%</div>
+        <div class="log-entry sys">> [SYS] BACKUP AUTOMÁTICO TPET CONCLUÍDO</div>
+        <div class="log-entry info">> [INFO] TRAJE MARK-01 INTEGRIDADE 97.3%</div>
+        <div class="log-entry info">> [SCAN] ANOMALIA QUÂNTICA DETECTADA, 12.4s</div>
+        <div class="log-entry warn">> [WARN] DISTORÇÃO TEMPORAL NA ZONA OMEGA</div>
+        <div class="log-entry sys">> [SYS] MONITORAMENTO CONTÍNUO ATIVO</div>
+        <div class="log-entry info">> [INFO] TRANSMISSÃO DE DADOS REALIZADA</div>
+    </aside>
+</div>
+
+<!-- MODAL PARA DETALHES DE ELEMENTOS -->
+<div id="elementModal" class="modal">
+    <div class="modal-content">
+        <span class="close-modal" onclick="closeModal()">&times;</span>
+        <h2 id="modalTitle"></h2>
+        <div id="modalBody"></div>
+    </div>
+</div>
+
+<script>
+    // Dados dos Elementos Trans-Universais
+    const elements = {
+        'baryon-h': {
+            name: 'Baryon-H',
+            symbol: 'Ba-H',
+            description: 'Elemento energético fundamental do motor de propulsão',
+            properties: 'Energia infinita, peso infinito, ponto de fusão desconhecido',
+            discovered: 'Observado na esteira orbital de MARK-01',
+            applications: 'Motores de salto instantâneo (combinado com Aether-G), nucleção de campos energéticos',
+            rarity: 'Extremamente raro | Núcleo da Terra contém variante estabilizada'
+        },
+        'chronium-v': {
+            name: 'Chronium-V',
+            symbol: 'Ch-V',
+            description: 'Estabilizador temporal e cristalizador de tempo',
+            properties: 'Imunidade à dilatação temporal, proteção de registros de missão',
+            discovered: 'Detectado durante análise de proteção orbital',
+            applications: 'Blindagens temporais, criação de bolhas de tempo, preservação de dados',
+            rarity: 'Extremamente raro | Fundamental para viagens trans-dimensionais'
+        },
+        'aether-g': {
+            name: 'Aether-G',
+            symbol: 'Ae-G',
+            description: 'Condutor de gravidade com gravidade negativa',
+            properties: 'Anula peso, permite levitação, conduz campos gravitacionais',
+            discovered: 'Identificado ao observar anulação do peso do motor Baryon-H',
+            applications: 'Sistemas de propulsão anti-gravidade, levitação, compensação de peso',
+            rarity: 'Raro | Combinado com Baryon-H produz motores de salto instantâneo'
+        },
+        'singularium-0': {
+            name: 'Singularium-0',
+            symbol: 'Si-0',
+            description: 'Vácuo absoluto que repele luz',
+            properties: 'Absorção de matéria, invisibilidade total, densidade teórica de 0',
+            discovered: 'Detectado em zona de sombra espectral próxima à nave',
+            applications: 'Blindagens de invisibilidade total, aprisionadores de energia, proteção de bases',
+            rarity: 'Conhecimento teórico | Localização desconhecida'
+        },
+        'entropium': {
+            name: 'Entropium',
+            symbol: 'En-C',
+            description: 'Energia do caos tóxica e verde',
+            properties: 'Desestruturação atômica, radiação verde, "Câncer Entrópico" celular',
+            discovered: 'Catalogado ao monitorar desestruturação celular de materia perto do corpo de Markovic',
+            applications: 'Arma de destruição em massa (proibida), escudo de defesa caótica',
+            rarity: 'Extremamente perigoso | Concentrado na "Zona Morta" do vácuo'
+        },
+        'vero-materia': {
+            name: 'Vero-Matéria',
+            symbol: 'Vr-X',
+            description: 'Matéria com densidade infinita',
+            properties: 'Gravidade extrema, peso imeasurável, interação com cordas de Aethelum',
+            discovered: 'Catalogada através de interações com fibras multidimensionais',
+            applications: 'Âncoras dimensionais, estabilizadores gravitacionais, núcleos de portais',
+            rarity: 'Desconhecido | Possível componente de estrutura do multiverso'
+        },
+        'luxium': {
+            name: 'Luxium',
+            symbol: 'Lu-X',
+            description: 'Condutor de luz multidimensional',
+            properties: 'Transmissão de dados através de dimensões, velocidade de transmissão superior à luz',
+            discovered: 'Identificado na blindagem de MARK-01',
+            applications: 'Sistemas de comunicação FTL, fibras de transmissão de dados, transmissores Luxion',
+            rarity: 'Raro | Essencial para comunicação com exploradores trans-dimensionais'
+        },
+        'aethelum': {
+            name: 'Aethelum',
+            symbol: 'Ae-0',
+            description: 'Cordas multidimensionais que tecem a realidade',
+            properties: 'Estrutura fundamental do multiverso, condutividade universal, imutabilidade',
+            discovered: 'Intersecção com análise de densidade de Vero-Matéria',
+            applications: 'Construção de portais entre universos, estabilização dimensional, arquitetura cósmica',
+            rarity: 'Desconhecido | Possível componente primário de toda matéria'
+        }
+    };
+
+    // Abas de Navegação
+    document.querySelectorAll('.nav-tabs button').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const tab = this.dataset.tab;
+            document.querySelectorAll('.nav-tabs button').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            document.querySelectorAll('.view-section').forEach(view => view.classList.remove('active'));
+            document.querySelector(`[data-view="${tab}"]`).classList.add('active');
+        });
+    });
+
+    // Relógio em Tempo Real
+    function updateTime() {
+        const now = new Date();
+        document.getElementById('timestamp').textContent = now.toLocaleTimeString('pt-br');
+    }
+    setInterval(updateTime, 1000);
+    updateTime();
+
+    // Modal de Elementos
+    function showElementDetails(elementId) {
+        const element = elements[elementId];
+        if (!element) return;
+        
+        const modal = document.getElementById('elementModal');
+        document.getElementById('modalTitle').textContent = element.symbol + ' - ' + element.name;
+        
+        let html = `
+            <h3>${element.description}</h3>
+            <div class="element-details">
+                <strong>Propriedades:</strong> ${element.properties}
+            </div>
+            <div class="element-details">
+                <strong>Descoberta:</strong> ${element.discovered}
+            </div>
+            <div class="element-details">
+                <strong>Aplicações:</strong> ${element.applications}
+            </div>
+            <div class="element-details" style="border-left-color: #ff9500;">
+                <strong>Raridade e Significado:</strong> ${element.rarity}
+            </div>
+        `;
+        
+        document.getElementById('modalBody').innerHTML = html;
+        modal.style.display = 'block';
+    }
+
+    function closeModal() {
+        document.getElementById('elementModal').style.display = 'none';
+    }
+
+    window.onclick = function(event) {
+        const modal = document.getElementById('elementModal');
+        if (event.target === modal) {
+            modal.style.display = 'none';
+        }
+    }
+</script>
+
+</body>
+</html>
